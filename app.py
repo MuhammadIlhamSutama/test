@@ -3,14 +3,41 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 import glob, os, time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from supabase import create_client, Client
 
+# ===== Supabase Setup =====
+SUPABASE_URL = ''
+SUPABASE_KEY = ''
+BUCKET_NAME = ''
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+def upload_to_supabase(filepath):
+    try:
+        filename = os.path.basename(filepath)
+        with open(filepath, 'rb') as f:
+            file_data = f.read()
+
+        # Cukup panggil upload, kalau gagal akan raise Exception
+        res = supabase.storage.from_(BUCKET_NAME).upload(
+            path=filename,
+            file=file_data
+        )
+
+        print(f"[Upload ✅] Berhasil upload: {filename}")
+
+    except Exception as e:
+        print(f"[Upload ❌] Error upload {filepath}: {e}")
+
+
+
+# ===== Konversi dan Upload =====
 input_dir = "images"
 output_dir = os.path.join(input_dir, "output")
 os.makedirs(output_dir, exist_ok=True)
 
 image_extensions = [".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"]
 
-def convert_single_image_to_webp(filepath, quality=2, resize_ratio=0.5):
+def convert_single_image_to_webp(filepath, quality=80, resize_ratio=0.5):
     ext = os.path.splitext(filepath)[1]
     if ext.lower() not in image_extensions:
         return
@@ -23,26 +50,29 @@ def convert_single_image_to_webp(filepath, quality=2, resize_ratio=0.5):
         print(f"[Convert] {filename} → {output_path}")
         im = Image.open(filepath).convert("RGB")
 
-        # Resize gambar (contoh: 50% dari ukuran asli)
         if resize_ratio < 1.0:
             new_size = (int(im.width * resize_ratio), int(im.height * resize_ratio))
             im = im.resize(new_size, Image.LANCZOS)
             print(f"[Resize] Ukuran baru: {new_size}")
 
-        # Simpan sebagai WebP dengan kompresi tinggi
         im.save(output_path, "webp", quality=quality, method=6)
 
-        # Hapus file asli jika bukan di folder output
+        # Hapus file asli
         if not os.path.commonpath([filepath, output_dir]) == output_dir:
             os.remove(filepath)
             print(f"[Delete] File asli dihapus: {filepath}")
+
+        # ✅ Upload ke Supabase
+        upload_to_supabase(output_path)
+
     except Exception as e:
         print(f"[Error] Gagal konversi {filename}: {e}")
 
+# ===== Watchdog =====
 class WatchFolder(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:
-            time.sleep(0.5)  # Delay sedikit biar file selesai disalin
+            time.sleep(0.5)  # Delay untuk pastikan file selesai ditulis
             convert_single_image_to_webp(event.src_path)
 
 if __name__ == "__main__":
