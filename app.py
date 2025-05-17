@@ -5,10 +5,10 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from supabase import create_client, Client
 
-# ===== Supabase Setup =====
-SUPABASE_URL = ''
-SUPABASE_KEY = ''
-BUCKET_NAME = ''
+# ===== Supabase Setup ===== #
+SUPABASE_URL = 'https://iglsabilpyvarzdadocj.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbHNhYmlscHl2YXJ6ZGFkb2NqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDM4MzIyNSwiZXhwIjoyMDU5OTU5MjI1fQ.I25MP0aQeKZAZ7U786nyKoW5luObYfpMPgnfYU2XT4Y'
+BUCKET_NAME = 'testfield'
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 def upload_to_supabase(filepath):
@@ -30,7 +30,7 @@ def upload_to_supabase(filepath):
 
 
 
-# ===== Konversi dan Upload =====
+# ===== Konversi dan Upload ===== #
 input_dir = "images"
 output_dir = os.path.join(input_dir, "output")
 os.makedirs(output_dir, exist_ok=True)
@@ -62,7 +62,6 @@ def convert_single_image_to_webp(filepath, quality=80, resize_ratio=0.5):
             os.remove(filepath)
             print(f"[Delete] File asli dihapus: {filepath}")
 
-        # ✅ Upload ke Supabase
         upload_to_supabase(output_path)
 
     except Exception as e:
@@ -72,11 +71,11 @@ def convert_single_image_to_webp(filepath, quality=80, resize_ratio=0.5):
 class WatchFolder(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:
-            time.sleep(0.5)  # Delay untuk pastikan file selesai ditulis
+            time.sleep(0.5) 
             convert_single_image_to_webp(event.src_path)
 
 if __name__ == "__main__":
-    print(f"👀 Memantau folder: {input_dir}")
+    print(f" Memantau folder: {input_dir}")
     event_handler = WatchFolder()
     observer = Observer()
     observer.schedule(event_handler, path=input_dir, recursive=False)

@@ -1,1 +1,0 @@
-# Delay sedikit biar file selesai disalin
